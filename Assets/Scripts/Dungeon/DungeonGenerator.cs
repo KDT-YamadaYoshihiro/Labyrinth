@@ -35,14 +35,14 @@ public class DungeonGenerator : MonoBehaviour
     {
         if (dungeonLoader == null)
         {
-            Debug.LogError("❌ DungeonLoader がアタッチされていません。");
+            Debug.LogError("DungeonLoader がアタッチされていません。");
             return;
         }
 
         var data = dungeonLoader.GetDungeonData(targetDungeonName);
         if (data == null)
         {
-            Debug.LogError($"❌ 指定したダンジョンデータ({targetDungeonName})が読み込まれていません。");
+            Debug.LogError($"指定したダンジョンデータ({targetDungeonName})が読み込まれていません。");
             return;
         }
 
