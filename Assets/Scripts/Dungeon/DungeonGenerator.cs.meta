@@ -1,2 +1,21 @@
 fileFormatVersion: 2
 guid: c3f5b58763d0bde46840910ff608e830
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - dungeonLoader: {instanceID: 0}
+  - floorPrefab: {fileID: 647765265510742994, guid: 3b7501cf91abe9c48958e7862c1799ef,
+      type: 3}
+  - wallPrefab: {fileID: 9104321445825918880, guid: 166b92b7222fe8344a671615701d3657,
+      type: 3}
+  - chestPrefab: {instanceID: 0}
+  - stairUpPrefab: {fileID: 6075975974975622418, guid: c4f2be6ec434a7f459aa4b66ff7fa133,
+      type: 3}
+  - stairDownPrefab: {fileID: 6075975974975622418, guid: c4f2be6ec434a7f459aa4b66ff7fa133,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

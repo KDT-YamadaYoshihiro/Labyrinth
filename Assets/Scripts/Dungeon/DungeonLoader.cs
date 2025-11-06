@@ -4,11 +4,15 @@ using System.Collections.Generic;
 
 /// <summary>
 /// 複数CSVからダンジョンデータを読み込むマネージャ
+/// エネミーデータ読み込みにも対応
 /// </summary>
 public class DungeonLoader : MonoBehaviour
 {
     [Header("読み込むCSVファイル名リスト（拡張子不要）")]
     [SerializeField] private List<string> csvFileNames = new List<string>();
+
+    [Header("生成時の親オブジェクト")]
+    [SerializeField] private Transform dungeonParent;
 
     // ファイル名ごとに2次元データを保持
     private Dictionary<string, List<List<string>>> dungeonDataMap = new Dictionary<string, List<List<string>>>();
@@ -34,7 +38,7 @@ public class DungeonLoader : MonoBehaviour
             LoadDungeonCSV(fileName);
         }
 
-        Debug.Log($" 全CSVファイルの読み込み完了！ 読み込んだファイル数: {dungeonDataMap.Count}");
+        Debug.Log($"[DungeonLoader] 全CSV読み込み完了 ({dungeonDataMap.Count}ファイル)");
     }
 
     /// <summary>
@@ -42,33 +46,61 @@ public class DungeonLoader : MonoBehaviour
     /// </summary>
     void LoadDungeonCSV(string fileName)
     {
-        string filePath = Path.Combine(Application.dataPath, $"Data/CSV/{fileName}.csv");
+        TextAsset csvFile = Resources.Load<TextAsset>($"CSV/{fileName}");
 
-        if (!File.Exists(filePath))
+        if (csvFile == null)
         {
-            Debug.LogError($"CSVファイルが見つかりません: {filePath}");
+            Debug.LogError($"[DungeonLoader] CSVファイルが見つかりません: {fileName}");
             return;
         }
 
         try
         {
-            string[] lines = File.ReadAllLines(filePath);
-            List<List<string>> dungeonData = new List<List<string>>();
+            string[] lines = csvFile.text.Split('\n');
+            List<List<string>> dungeonData = new();
 
             for (int y = 0; y < lines.Length; y++)
             {
-                string[] cells = lines[y].Split(',');
-                List<string> row = new List<string>();
+                if (string.IsNullOrWhiteSpace(lines[y])) continue;
+                string[] cells = lines[y].Trim().Split(',');
+                List<string> row = new();
 
                 for (int x = 0; x < cells.Length; x++)
                 {
                     string cell = cells[x].Trim();
                     row.Add(cell);
 
+                    // === 敵セルの検出 ===
                     if (cell.StartsWith("E"))
                     {
-                        string enemyType = (cell.Length > 1) ? cell.Substring(1) : "不明";
-                        Debug.Log($"[{fileName}] 敵({enemyType})が発見 [x:{x}, y:{y}]");
+                        int enemyID = 0;
+                        if (cell.Length > 1 && int.TryParse(cell.Substring(1), out enemyID))
+                        {
+                            EnemyData data = EnemyManager.Instance.GetEnemyData(enemyID);
+                            if (data != null)
+                            {
+                                GameObject prefab = Resources.Load<GameObject>($"Prefabs/{data.PrefabName}");
+                                if (prefab != null)
+                                {
+                                    Vector3 pos = new Vector3(x, 0, -y);
+                                    GameObject enemyObj = Instantiate(prefab, pos, Quaternion.identity, dungeonParent);
+
+                                    Enemy enemy = enemyObj.GetComponent<Enemy>();
+                                    if (enemy != null)
+                                        enemy.Initialize(data);
+
+                                    Debug.Log($"[DungeonLoader] 敵生成: {data.Name} (ID:{enemyID}) at ({x},{y})");
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"[DungeonLoader] 敵プレハブが見つかりません: {data.PrefabName}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[DungeonLoader] 敵IDが不明なセル: {cell}");
+                        }
                     }
                 }
 
@@ -77,31 +109,25 @@ public class DungeonLoader : MonoBehaviour
 
             dungeonDataMap[fileName] = dungeonData;
 
-            Debug.Log($"CSV読み込み成功: {fileName}（行数: {dungeonData.Count}, 列数: {dungeonData[0].Count}）");
+            Debug.Log($"[DungeonLoader] CSV読み込み成功: {fileName} (行:{dungeonData.Count}, 列:{dungeonData[0].Count})");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"CSV『{fileName}』読み込み中にエラー: {e.Message}");
+            Debug.LogError($"[DungeonLoader] CSV『{fileName}』読み込み中にエラー: {e.Message}");
         }
     }
 
-    /// <summary>
-    /// 特定のダンジョンデータを取得
-    /// </summary>
     public List<List<string>> GetDungeonData(string fileName)
     {
         if (dungeonDataMap.ContainsKey(fileName))
             return dungeonDataMap[fileName];
         else
         {
-            Debug.LogError($"ダンジョンデータ『{fileName}』は読み込まれていません。");
+            Debug.LogError($"[DungeonLoader] ダンジョンデータ『{fileName}』は読み込まれていません。");
             return null;
         }
     }
 
-    /// <summary>
-    /// 読み込んだ全ファイル名を取得
-    /// </summary>
     public List<string> GetLoadedFileNames()
     {
         return new List<string>(dungeonDataMap.Keys);
